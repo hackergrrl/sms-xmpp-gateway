@@ -5,7 +5,7 @@ var config = require('./config');
 
 var Gateway = function(opts) {
     // TODO: TLS support (accept key+cert content _or_ key+cert local path)
-    // TODO: BOSH support (for web clients)
+    // TODO(someday): BOSH support (for web clients)
 
     this.port = opts.port || 5222;
     this.domain = opts.domain || 'localhost'

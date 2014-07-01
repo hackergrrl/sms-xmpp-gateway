@@ -26,7 +26,7 @@ var runServer = function() {
 };
 
 
-test('client connect', function(t) {
+test('client auth', function(t) {
     t.plan(1);
 
     var server = runServer();
@@ -43,6 +43,27 @@ test('client connect', function(t) {
     client.addListener('error', function(err) {
         t.ok(false);
         console.log(err);
+        client.end()
+        server.end();
+    });
+});
+
+test('client bad auth', function(t) {
+    t.plan(1);
+
+    var server = runServer();
+
+    var number = '14356024496';
+    var account = accounts[number];
+
+    var client = new XmppClient({ jid: number+'@localhost/test', password: 'qwertyfizzle' })
+    client.addListener('online', function(data) {
+        t.ok(false);
+        client.end()
+        server.end();
+    });
+    client.addListener('error', function(err) {
+        t.equals("XMPP authentication failure", err);
         client.end()
         server.end();
     });
@@ -75,3 +96,36 @@ test('client send', function(t) {
         server.end();
     });
 });
+
+test('client send bad recipient', function(t) {
+    t.plan(1);
+
+    var server = runServer();
+
+    var number = '14356024496';
+    var account = accounts[number];
+
+    var client = new XmppClient({ jid: number+'@localhost/test', password: account.password })
+    client.addListener('online', function(data) {
+        var msg = new ltx.Element('message', {
+            to: '16696009123',
+            type: 'chat'
+        })
+        msg.c('body').t('hello warld')
+        client.send(msg)
+        // TODO: this isn't a real check for success
+        server.end();
+    });
+    client.addListener('error', function(err) {
+        t.ok(true);
+        console.log(err);
+        client.end()
+        server.end();
+    });
+});
+
+test('client recv', function(t) {
+  t.pass();
+  t.end();
+});
+
