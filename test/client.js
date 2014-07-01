@@ -80,7 +80,7 @@ test('client send', function(t) {
     var client = new XmppClient({ jid: number+'@localhost/test', password: account.password })
     client.addListener('online', function(data) {
         var msg = new ltx.Element('message', {
-            to: '16696009123',
+            to: '16696009123@localhost',
             type: 'chat'
         })
         msg.c('body').t('hello warld')

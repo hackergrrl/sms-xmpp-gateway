@@ -1,5 +1,6 @@
 var twilio = require('twilio');
 var xmpp = require('node-xmpp-server');
+var JID = require('node-xmpp-core').JID;
 var Message = require('node-xmpp').Message;
 var config = require('./config');
 
@@ -41,9 +42,8 @@ Gateway.prototype.listen = function() {
     this.c2s = c2s;
 
     // On Connect event. When a client connects.
-    var that = this;
+    var gateway = this;
     c2s.on('connect', function(client) {
-        // That's the way you add mods to a given server.
 
         // Allows the developer to register the jid against anything they want
         c2s.on('register', function(opts, cb) {
@@ -56,7 +56,7 @@ Gateway.prototype.listen = function() {
             console.log('AUTH: ' + opts.jid + ' -> ' +opts.password)
             // client.send(new Message({ type: 'chat' }).c('body').t('Hello there, little client.'))
             var number = opts.jid.local;
-            if (!that.accounts[number] || that.accounts[number].password != opts.password) {
+            if (!gateway.accounts[number] || gateway.accounts[number].password != opts.password) {
                 cb(false);
             } else {
                 cb(null, opts);
@@ -68,16 +68,39 @@ Gateway.prototype.listen = function() {
             console.log('ONLINE')
         })
 
-        // Stanza handling
         client.on('stanza', function(stanza) {
-            // TODO: parse + validate FROM (domain + number)
-            // TODO: parse + validate TO (domain + is-actual-phone-number)
-            // TODO: make sure stanza.attrs.type == 'chat' (not 'error'; drop anything else)
+            var fromJid = new JID(stanza.from);
+            var toJid = new JID(stanza.to);
+            if (stanza.type === "chat") {
+                // TODO: can we assume the sender's JID is well-formed?
+                // TODO: does the 'client' object have a JID we can just use?
+                // if (!fromJid.getLocal() || !fromJid.getDomain()) {
+                //     client.send(new Message({ type: 'error' }).c('body').t('Hello there, little client.'))
+                //     return;
+                // }
+
+                // Check for malformed 'to'; or incorrect domain.
+                if (!toJid.getLocal() || !toJid.getDomain() || toJid.getDomain() !== gateway.domain) {
+                    // TODO: return an error (invalid recipient)
+                    return;
+                }
+
+                // Check for malformed phone number.
+                // ...
+                // return an error 'gone' if the account is not sendable to (i.e. not a phone #)
+     // <error by='example.net'
+     //        type='cancel'>
+     //   <gone xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'>
+     //     xmpp:romeo@afterlife.example.net
+     //   </gone>
+     // </error>
+            } else {
+                console.log("TODO: handle stanza type '" + stanza.type + "': " + stanza);
+            }
             console.log('STANZA' + stanza)
             console.log(stanza.attrs);
         })
 
-        // On Disconnect event. When a client disconnects
         client.on('disconnect', function() {
             // TODO: track all online clients per-account, so we can fanout msgs to them
             console.log('DISCONNECT')
